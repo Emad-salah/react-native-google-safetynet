@@ -1,7 +1,7 @@
 
 package com.rajivshah.safetynet;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.app.Activity;
 import android.util.Log;
 import android.util.Base64;
@@ -78,24 +78,28 @@ public class RNGoogleSafetyNetModule extends ReactContextBaseJavaModule {
    * @param promise
    */
   @ReactMethod
-  public void sendAttestationRequest(String nonceString, String apiKey, final Promise promise){
-    byte[] nonce;
-    Activity activity;
-    nonce = stringToBytes(nonceString);
-    activity = getCurrentActivity();
-    SafetyNet.getClient(baseContext).attest(nonce, apiKey)
-    .addOnSuccessListener(activity,
-    new OnSuccessListener<SafetyNetApi.AttestationResponse>() {
+  public void sendAttestationRequest(final String nonceString, final String apiKey, final Promise promise){
+    final Activity activity = getCurrentActivity();
+    final byte[] nonce = stringToBytes(nonceString);
+    activity.runOnUiThread(new Runnable() {
       @Override
-      public void onSuccess(SafetyNetApi.AttestationResponse response) {
-        String result = response.getJwsResult();
-        promise.resolve(result);
-      }
-    })
-    .addOnFailureListener(activity, new OnFailureListener() {
-      @Override
-      public void onFailure(@NonNull Exception e) {
-        promise.reject(e);
+      public void run() {
+        SafetyNet
+          .getClient(baseContext)
+          .attest(nonce, apiKey)
+          .addOnSuccessListener(activity, new OnSuccessListener<SafetyNetApi.AttestationResponse>() {
+            @Override
+            public void onSuccess(SafetyNetApi.AttestationResponse response) {
+              String result = response.getJwsResult();
+              promise.resolve(result);
+            }
+          })
+          .addOnFailureListener(activity, new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+              promise.reject(e);
+            }
+          });
       }
     });
   }
